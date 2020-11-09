@@ -1,3 +1,5 @@
 # Storefront API
 
-this is the repository of the api for my 'Storefront' site.
+This is the repository of the api for my 'Storefront' site.
+
+The client can be viewed here: https://github.com/jgoodier1/storefront
