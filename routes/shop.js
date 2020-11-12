@@ -11,5 +11,7 @@ router.post('/cart', shopController.postCart);
 router.post('/cart-delete', shopController.postCartDelete);
 router.post('/order', shopController.postOrder);
 router.post('/orders', shopController.postOrders);
+// VALIDATE INPUT
+router.get('/search', shopController.getSearch);
 
 module.exports = router;

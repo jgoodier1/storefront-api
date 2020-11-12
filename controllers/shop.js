@@ -91,16 +91,28 @@ exports.postOrder = async (req, res, next) => {
 exports.postOrders = async (req, res, next) => {
   const { userId } = req.body;
   try {
-    const orders = await Order.find({ 'user.userId': userId })
-      .populate({
-        path: 'products',
-        populate: {path: 'prodId'}
-      });
-    console.log(orders)
+    const orders = await Order.find({ 'user.userId': userId }).populate({
+      path: 'products',
+      populate: { path: 'prodId' }
+    });
+    // console.log(orders);
     if (!orders) {
       throw new Error('no orders found');
     }
     res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'an error occurred', error: err });
+  }
+};
+
+exports.getSearch = async (req, res) => {
+  const { value } = req.query;
+  const regExp = new RegExp(value, 'i');
+  // console.log(regExp);
+  try {
+    const results = await Product.find({ $text: { $search: regExp } }).exec();
+    // console.log(results);
+    res.status(200).json(results);
   } catch (err) {
     res.status(500).json({ message: 'an error occurred', error: err });
   }
