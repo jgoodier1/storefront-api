@@ -50,6 +50,7 @@ exports.postCart = async (req, res, next) => {
   }
 };
 
+//not using this?
 exports.postCartDelete = (req, res, next) => {
   const { id } = req.body;
   req.user
@@ -65,15 +66,15 @@ exports.postCartDelete = (req, res, next) => {
 
 exports.postOrder = async (req, res, next) => {
   // verify the data with the data from the db
-  const { orderedCart, orderData, userId, shippingSpeed } = req.body;
+  const { cart, orderData, userId, shippingSpeed, totalPrice } = req.body;
   try {
     const user = await User.findById(userId);
     if (!user) {
       throw new Error('no user found');
     }
     const order = new Order({
-      products: orderedCart.products,
-      subTotal: orderedCart.subTotal,
+      products: cart.products,
+      totalPrice,
       contactInfo: orderData,
       shippingSpeed,
       user: {
