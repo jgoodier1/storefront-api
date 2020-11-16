@@ -46,11 +46,15 @@ app.use(authRoutes);
 const port = process.env.PORT || 5000;
 
 mongoose
-  .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then((result) => {
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true
+  })
+  .then(result => {
     app.listen(port);
   })
-  .catch((err) => console.log(err));
+  .catch(err => console.log(err));
 
 // const user = new User({
 //   email: 'test@test.com',
