@@ -11,6 +11,8 @@ const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
 const User = require('./models/user');
 
+const faker = require('../faker');
+
 const MONGODB_URI =
   'mongodb+srv://jacob:5qiVMpvMzcAtIvDC@cluster0.5e1rk.mongodb.net/shop';
 
@@ -42,6 +44,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
+
+// app.post('/fake', faker.postFaker);
 
 const port = process.env.PORT || 5000;
 
