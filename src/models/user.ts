@@ -1,25 +1,33 @@
-const mongoose = require('mongoose');
+import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
+
+interface userDoc extends mongoose.Document {
+  name: string;
+  email: string;
+  password: string;
+  cart: ObjectId;
+}
 
 const userSchema = new Schema({
   name: {
     type: String,
-    required: true,
+    required: true
   },
   email: {
     type: String,
-    required: true,
+    required: true
   },
   password: {
     type: String,
-    required: true,
+    required: true
   },
   cart: {
     type: Schema.Types.ObjectId,
     ref: 'Cart',
-    required: false,
-  },
+    required: false
+  }
 });
 
 // userSchema.methods.addToCart = function (product) {
@@ -46,12 +54,12 @@ const userSchema = new Schema({
 //   return this.save();
 // };
 
-userSchema.methods.removeCart = function (productId) {
-  const updatedCartItems = this.cart.items.filter((item) => {
-    return item.prodId.toString() !== productId.toString();
-  });
-  this.cart.items = updatedCartItems;
-  return this.save();
-};
+// userSchema.methods.removeCart = function (productId: ObjectId) {
+//   const updatedCartItems = this.cart.items.filter(item => {
+//     return item.prodId.toString() !== productId.toString();
+//   });
+//   this.cart.items = updatedCartItems;
+//   return this.save();
+// };
 
-module.exports = mongoose.model('User', userSchema);
+export default mongoose.model<userDoc>('User', userSchema);

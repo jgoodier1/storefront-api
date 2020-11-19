@@ -1,17 +1,17 @@
-const path = require('path');
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+import path from 'path';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
 // const csrf = require('csurf');
-const bodyParser = require('body-parser');
-require('dotenv').config();
+import bodyParser from 'body-parser';
+import 'dotenv/config';
 
-const adminRoutes = require('./routes/admin');
-const shopRoutes = require('./routes/shop');
-const authRoutes = require('./routes/auth');
-const User = require('./models/user');
+import adminRoutes from './routes/admin';
+import shopRoutes from './routes/shop';
+import authRoutes from './routes/auth';
+// const User = require('./models/user');
 
-const faker = require('../faker');
+// const faker = require('../faker');
 
 const MONGODB_URI =
   'mongodb+srv://jacob:5qiVMpvMzcAtIvDC@cluster0.5e1rk.mongodb.net/shop';
@@ -55,7 +55,7 @@ mongoose
     useUnifiedTopology: true,
     useCreateIndex: true
   })
-  .then(result => {
+  .then(() => {
     app.listen(port);
   })
   .catch(err => console.log(err));

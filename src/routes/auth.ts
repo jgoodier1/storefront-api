@@ -1,8 +1,8 @@
-const express = require('express');
-const { body } = require('express-validator');
+import express from 'express';
+import { body } from 'express-validator';
 
-const User = require('../models/user');
-const authController = require('../controllers/auth');
+import User from '../models/user';
+import * as authController from '../controllers/auth';
 
 const router = express.Router();
 
@@ -13,8 +13,8 @@ router.post(
     body('email')
       .isEmail()
       .withMessage('Please enter a valid email')
-      .custom((value, { req }) => {
-        return User.findOne({ email: value }).then((userDoc) => {
+      .custom(value => {
+        return User.findOne({ email: value }).then(userDoc => {
           if (userDoc) {
             return Promise.reject('Email already exists');
           }
@@ -32,7 +32,7 @@ router.post(
         }
         return true;
       })
-      .trim(),
+      .trim()
   ],
   authController.postSignUp
 );
@@ -44,11 +44,11 @@ router.post(
     body('password', 'Password must be alphanumeric and at least 5 characters')
       .isLength({ min: 5 })
       .isAlphanumeric()
-      .trim(),
+      .trim()
   ],
   authController.postSignIn
 );
 
 // router.post('/logout', authController.postLogout);
 
-module.exports = router;
+export default router;

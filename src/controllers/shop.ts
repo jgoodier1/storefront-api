@@ -1,45 +1,62 @@
-const Product = require('../models/product');
-const User = require('../models/user');
-const Order = require('../models/order');
+import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
 
-exports.getProducts = (req, res, next) => {
-  Product.find()
-    .then(products => {
-      res.send(products);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(400).json('nice try');
-    });
+import Product from '../models/product';
+import User from '../models/user';
+import Order from '../models/order';
+
+interface product {
+  title: string;
+  image: string;
+  price: number;
+  // maybe not a string
+  prodId: ObjectId;
+  quantity: number;
+}
+
+interface cartProduct {
+  prodId: ObjectId;
+  quantity: number;
+}
+
+export const getProducts = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const product = await Product.find();
+    res.send(product);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json('nice try');
+  }
 };
 
-exports.getProduct = (req, res, next) => {
+export const getProduct = async (req: Request, res: Response): Promise<void> => {
   const { prodId } = req.params;
-  Product.findById(prodId)
-    .then(product => {
-      res.status(200).json(product);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(400).json('product not found');
-    });
+  try {
+    const product = await Product.findById(prodId);
+    res.status(200).json(product);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json('product not found');
+  }
 };
 
-exports.postCart = async (req, res, next) => {
+export const postCart = async (req: Request, res: Response): Promise<void> => {
   const { products } = req.body;
-  let response = [];
+  const response: product[] = [];
   try {
     if (products && products.length > 0) {
-      await products.forEach(async p => {
-        let result = await Product.findById(p.prodId);
-        let something = {
-          title: result.title,
-          image: result.image,
-          price: result.price,
-          prodId: result._id,
-          quantity: p.quantity
-        };
-        response.push(something);
+      await products.forEach(async (p: cartProduct) => {
+        const result = await Product.findById(p.prodId);
+        if (result) {
+          const something = {
+            title: result.title,
+            image: result.image,
+            price: result.price,
+            prodId: result._id,
+            quantity: p.quantity
+          };
+          response.push(something);
+        } else return;
       });
       setTimeout(() => res.json(response), 500); // this is definitely not the way to do it, but it works.
     } else {
@@ -50,21 +67,7 @@ exports.postCart = async (req, res, next) => {
   }
 };
 
-//not using this?
-exports.postCartDelete = (req, res, next) => {
-  const { id } = req.body;
-  req.user
-    .removeCart(id)
-    .then(result => {
-      res.status(200).json(result);
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(400).json(err);
-    });
-};
-
-exports.postOrder = async (req, res, next) => {
+export const postOrder = async (req: Request, res: Response): Promise<void> => {
   // verify the data with the data from the db
   const { cart, orderData, userId, shippingSpeed, totalPrice } = req.body;
   try {
@@ -89,7 +92,7 @@ exports.postOrder = async (req, res, next) => {
   }
 };
 
-exports.postOrders = async (req, res, next) => {
+export const postOrders = async (req: Request, res: Response): Promise<void> => {
   const { userId } = req.body;
   try {
     const orders = await Order.find({ 'user.userId': userId }).populate({
@@ -106,18 +109,25 @@ exports.postOrders = async (req, res, next) => {
   }
 };
 
-exports.getSearch = async (req, res) => {
+export const getSearch = async (req: Request, res: Response): Promise<void> => {
   const { value } = req.query;
-  const regExp = new RegExp(value, 'i');
-  // console.log(regExp);
-  try {
-    const results = await Product.find({ $text: { $search: regExp } }).exec();
-    // console.log(results);
-    res.status(200).json(results);
-  } catch (err) {
-    res.status(500).json({ message: 'an error occurred', error: err });
+  if (typeof value === 'string') {
+    // const regExp = new RegExp(value, 'i');
+    try {
+      // const results = await Product.find({ $text: { $search: regExp,  } }).exec();
+      const results = await Product.find({
+        title: { $regex: value, $options: 'i' }
+      }).exec();
+      res.status(200).json(results);
+    } catch (err) {
+      res.status(500).json({ message: 'an error occurred', error: err });
+    }
+  } else {
+    res.status(500).json('an error occurred');
   }
 };
+
+// export default shopController;
 
 // exports.postCart = (req, res, next) => {
 //   const { cart } = req.body;

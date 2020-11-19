@@ -1,6 +1,16 @@
-const mongoose = require('mongoose');
+import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
+
+export interface productDoc extends mongoose.Document {
+  _id: ObjectId;
+  title: string;
+  price: number;
+  image: string;
+  description: string;
+  userId: ObjectId;
+}
 
 const productSchema = new Schema({
   title: {
@@ -28,4 +38,4 @@ const productSchema = new Schema({
 // https://stackoverflow.com/questions/28775051/best-way-to-perform-a-full-text-search-in-mongodb-and-mongoose
 productSchema.index({ title: 'text', description: 'text' });
 
-module.exports = mongoose.model('Product', productSchema);
+export default mongoose.model<productDoc>('Product', productSchema);

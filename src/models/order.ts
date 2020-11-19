@@ -1,6 +1,28 @@
-const mongoose = require('mongoose');
+import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
+
+interface orderDoc extends mongoose.Document {
+  products: [prodId: ObjectId, quantity: number, price: number];
+  totalPrice: number;
+  contactInfo: {
+    firstName: string;
+    lastName: string;
+    streetAddress: string;
+    streetAddressTwo: string;
+    city: string;
+    province: string;
+    country: string;
+    postalCode: string;
+    phoneNumber: string;
+  };
+  shippingSpeed: string;
+  user: {
+    email: string;
+    userId: ObjectId;
+  };
+}
 
 const orderSchema = new Schema(
   {
@@ -45,4 +67,4 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Order', orderSchema);
+export default mongoose.model<orderDoc>('Order', orderSchema);
