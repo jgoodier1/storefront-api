@@ -20,9 +20,20 @@ interface cartProduct {
 }
 
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
+  let currentPage;
+  if (req.query.page !== undefined) {
+    currentPage = +req.query.page;
+  } else {
+    currentPage = 1;
+  }
+  const perPage = 10;
+  let totalItems;
   try {
-    const product = await Product.find();
-    res.send(product);
+    totalItems = await Product.find().countDocuments();
+    const products = await Product.find()
+      .skip((currentPage - 1) * 10)
+      .limit(perPage);
+    res.status(200).json({ products, totalItems });
   } catch (err) {
     console.log(err);
     res.status(400).json('nice try');
@@ -75,6 +86,8 @@ export const postOrder = async (req: Request, res: Response): Promise<void> => {
     if (!user) {
       throw new Error('no user found');
     }
+    // probably shouldn't hard code this here
+    orderData.country = 'Canada';
     const order = new Order({
       products: cart.products,
       totalPrice,
