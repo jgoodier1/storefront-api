@@ -1,3 +1,5 @@
+// NOT USING THIS
+
 // import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import Product from '../models/product';

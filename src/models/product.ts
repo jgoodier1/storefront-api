@@ -35,7 +35,6 @@ const productSchema = new Schema({
     required: true
   }
 });
-// https://stackoverflow.com/questions/28775051/best-way-to-perform-a-full-text-search-in-mongodb-and-mongoose
 productSchema.index({ title: 'text', description: 'text' });
 
 export default mongoose.model<productDoc>('Product', productSchema);

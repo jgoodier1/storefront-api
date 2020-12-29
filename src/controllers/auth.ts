@@ -70,11 +70,3 @@ export const postSignIn = (req: Request, res: Response): any => {
       console.log(err);
     });
 };
-
-// exports.postLogout = (req, res, next) => {
-//   req.session.destroy((err) => {
-//     console.log('logout err', err);
-//     console.log('req.session', req.session);
-//     res.status(200).json("i think you're logged out");
-//   });
-// };
