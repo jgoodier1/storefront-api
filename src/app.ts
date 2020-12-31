@@ -4,7 +4,8 @@ import express, { Response, Request, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import 'dotenv/config';
+// import 'dotenv/config';
+import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
 // import adminRoutes from './routes/admin';
@@ -12,10 +13,11 @@ import shopRoutes from './routes/shop';
 import authRoutes from './routes/auth';
 import { NewError } from './error';
 
-const MONGODB_URI =
-  'mongodb+srv://jacob:5qiVMpvMzcAtIvDC@cluster0.5e1rk.mongodb.net/shop';
+// const MONGODB_URI = process.env.MONGODB_URI;
 
 const app = express();
+
+dotenv.config({ path: __dirname + '/.env' });
 
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
   flags: 'a'
@@ -42,7 +44,7 @@ app.use((error: NewError, req: Request, res: Response, next: NextFunction) => {
 const port = process.env.PORT || 5000;
 
 mongoose
-  .connect(MONGODB_URI, {
+  .connect(process.env.MONGODB_URI as string, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true
