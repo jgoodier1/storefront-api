@@ -13,12 +13,11 @@ router.post(
     body('email')
       .isEmail()
       .withMessage('Please enter a valid email')
-      .custom(value => {
-        return User.findOne({ email: value }).then(userDoc => {
-          if (userDoc) {
-            return Promise.reject('Email already exists');
-          }
-        });
+      .custom(async value => {
+        const userDoc = await User.findOne({ email: value });
+        if (userDoc) {
+          return Promise.reject('Email already exists');
+        } else return;
       })
       .normalizeEmail(),
     body('password', 'Password must be alphanumeric and at least 5 characters')
