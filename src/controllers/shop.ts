@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ObjectId } from 'mongodb';
 import { validationResult } from 'express-validator';
 import Stripe from 'stripe';
@@ -12,6 +12,7 @@ const stripe = new Stripe(
 import Product from '../models/product';
 import User from '../models/user';
 import Order from '../models/order';
+import { NewError, HttpStatusCode } from '../error';
 
 interface product {
   title: string;
@@ -26,7 +27,11 @@ interface cartProduct {
   quantity: number;
 }
 
-export const getProducts = async (req: Request, res: Response): Promise<void> => {
+export const getProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   let currentPage;
   if (req.query.page !== undefined) {
     currentPage = +req.query.page;
@@ -40,25 +45,41 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     const products = await Product.find()
       .skip((currentPage - 1) * 10)
       .limit(perPage);
+    if (!products || !totalItems) {
+      const error = new NewError('Products not found', HttpStatusCode.NOT_FOUND);
+      return next(error);
+    }
     res.status(200).json({ products, totalItems });
   } catch (err) {
-    console.log(err);
-    res.status(400).json('nice try');
+    const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+    return next(error);
   }
 };
 
-export const getProduct = async (req: Request, res: Response): Promise<void> => {
+export const getProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { prodId } = req.params;
   try {
     const product = await Product.findById(prodId);
+    if (!product) {
+      const error = new NewError('product not found', HttpStatusCode.NOT_FOUND);
+      return next(error);
+    }
     res.status(200).json(product);
   } catch (err) {
-    console.log(err);
-    res.status(400).json('product not found');
+    const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+    return next(error);
   }
 };
 
-export const postCart = async (req: Request, res: Response): Promise<void> => {
+export const postCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { products } = req.body;
   const response: product[] = [];
   try {
@@ -81,12 +102,17 @@ export const postCart = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'Cart is empty' });
     }
   } catch (err) {
-    console.log(err);
+    const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+    return next(error);
   }
 };
 
-// eslint-disable-next-line
-export const postOrder = async (req: Request, res: Response): Promise<any> => {
+export const postOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+  // eslint-disable-next-line
+): Promise<any> => {
   const { cart, orderData, userId, shippingSpeed, totalPrice } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -95,7 +121,7 @@ export const postOrder = async (req: Request, res: Response): Promise<any> => {
   try {
     const user = await User.findById(userId);
     if (!user) {
-      throw new Error('no user found');
+      throw new NewError('no user found', HttpStatusCode.NOT_FOUND);
     }
     // probably shouldn't hard code this here
     orderData.country = 'Canada';
@@ -112,11 +138,16 @@ export const postOrder = async (req: Request, res: Response): Promise<any> => {
     await order.save();
     res.status(200).json({ message: 'order success', order });
   } catch (err) {
-    res.status(500).json({ message: 'an error occured', err });
+    const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+    return next(error);
   }
 };
 
-export const postSecret = async (req: Request, res: Response): Promise<void> => {
+export const postSecret = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { items, shippingSpeed, formValues, userId } = req.body;
 
   const calculateOrderAmount = async (
@@ -124,8 +155,6 @@ export const postSecret = async (req: Request, res: Response): Promise<void> => 
     shippingSpeed: string,
     province: string
   ): Promise<number> => {
-    // need to charge shipping and tax too.
-    // need shipping price constants and tax too. Maybe these would be environment vars in real life
     const priceArray: number[] = [];
     for await (const p of items) {
       const product = await Product.findById(p.prodId).exec();
@@ -189,30 +218,34 @@ export const postSecret = async (req: Request, res: Response): Promise<void> => 
     console.log({ subTotal, tax, afterTax, amount });
     return amount * 100;
   };
-  // add the order and shipping info as metadata
-  const intent = await stripe.paymentIntents.create({
-    currency: 'cad',
-    amount: await calculateOrderAmount(
-      items.products,
-      shippingSpeed,
-      formValues.province
-    ),
-    payment_method_types: ['card'],
-    metadata: {
-      shippingSpeed,
-      userId,
-      firstName: formValues.firstName,
-      lastName: formValues.lastName,
-      streetAddress: formValues.streetAddress,
-      streetAddressTwo: formValues.streetAddressTwo,
-      city: formValues.city,
-      province: formValues.province,
-      postalCode: formValues.postalCode,
-      phoneNumber: formValues.phoneNumber
-    }
-  });
+  try {
+    const intent = await stripe.paymentIntents.create({
+      currency: 'cad',
+      amount: await calculateOrderAmount(
+        items.products,
+        shippingSpeed,
+        formValues.province
+      ),
+      payment_method_types: ['card'],
+      metadata: {
+        shippingSpeed,
+        userId,
+        firstName: formValues.firstName,
+        lastName: formValues.lastName,
+        streetAddress: formValues.streetAddress,
+        streetAddressTwo: formValues.streetAddressTwo,
+        city: formValues.city,
+        province: formValues.province,
+        postalCode: formValues.postalCode,
+        phoneNumber: formValues.phoneNumber
+      }
+    });
 
-  res.json({ clientSecret: intent.client_secret });
+    res.json({ clientSecret: intent.client_secret });
+  } catch (err) {
+    const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+    return next(error);
+  }
 };
 
 //eslint-disable-next-line
@@ -233,7 +266,7 @@ export const webhook = async (req: Request, res: Response): Promise<any> => {
         const user = await User.findById(metadata.userId);
         // should prob verify this in postSecret
         if (!user) {
-          throw new Error('no user found');
+          throw new NewError('no user found', HttpStatusCode.NOT_FOUND);
         }
         const order = new Order({
           products: metadata.items,
@@ -271,7 +304,11 @@ export const webhook = async (req: Request, res: Response): Promise<any> => {
   res.send();
 };
 
-export const postOrders = async (req: Request, res: Response): Promise<void> => {
+export const postOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { userId } = req.body;
   try {
     const orders = await Order.find({ 'user.userId': userId }).populate({
@@ -283,29 +320,34 @@ export const postOrders = async (req: Request, res: Response): Promise<void> => 
     }
     res.status(200).json(orders);
   } catch (err) {
-    res.status(500).json({ message: 'an error occurred', error: err });
+    const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+    return next(error);
   }
 };
 
-// eslint-disable-next-line
-export const getSearch = async (req: Request, res: Response): Promise<any> => {
+export const getSearch = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+  // eslint-disable-next-line
+): Promise<any> => {
   const { value } = req.query;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).json(errors.array());
   }
   if (typeof value === 'string') {
-    // const regExp = new RegExp(value, 'i');
     try {
-      // const results = await Product.find({ $text: { $search: regExp,  } }).exec();
       const results = await Product.find({
         title: { $regex: value, $options: 'i' }
       }).exec();
       res.status(200).json(results);
     } catch (err) {
-      res.status(500).json({ message: 'an error occurred', error: err });
+      const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
+      return next(error);
     }
   } else {
-    res.status(500).json('an error occurred');
+    const error = new NewError('Invalid query', HttpStatusCode.BAD_REQUEST);
+    return next(error);
   }
 };
