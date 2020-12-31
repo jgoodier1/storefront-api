@@ -2,12 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { ObjectId } from 'mongodb';
 import { validationResult } from 'express-validator';
 import Stripe from 'stripe';
-const stripe = new Stripe(
-  'sk_test_51HKOZDEVSid6nUScJAr0VwQww6hg9pdAoo0Ob1HnT2gRftyPEuio3PoREBGPbZzqVt1OB1kojdh3RmoYO5p1s6ve00tD6Cwjzs',
-  {
-    apiVersion: '2020-08-27'
-  }
-);
+const stripe = new Stripe(process.env.STRIPE_KEY as string, {
+  apiVersion: '2020-08-27'
+});
 
 import Product from '../models/product';
 import User from '../models/user';

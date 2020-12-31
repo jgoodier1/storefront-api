@@ -9,8 +9,7 @@ import 'dotenv/config';
 import shopRoutes from './routes/shop';
 import authRoutes from './routes/auth';
 
-const MONGODB_URI =
-  'mongodb+srv://jacob:5qiVMpvMzcAtIvDC@cluster0.5e1rk.mongodb.net/shop';
+// const MONGODB_URI = process.env.MONGODB_URI;
 
 const app = express();
 
@@ -28,7 +27,7 @@ app.use(authRoutes);
 const port = process.env.PORT || 5000;
 
 mongoose
-  .connect(MONGODB_URI, {
+  .connect(process.env.MONGODB_URI as string, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true
