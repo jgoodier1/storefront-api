@@ -48,7 +48,6 @@ router.post(
   shopController.postOrder
 );
 router.post('/create-payment-intent', shopController.postSecret);
-router.post('/webhook', shopController.webhook);
 router.post('/orders', shopController.postOrders);
 router.get('/search', [query('value').trim().isAlphanumeric()], shopController.getSearch);
 
