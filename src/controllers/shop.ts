@@ -145,7 +145,7 @@ export const postSecret = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { items, shippingSpeed, formValues, userId } = req.body;
+  const { items, shippingSpeed, formValues } = req.body;
 
   const calculateOrderAmount = async (
     items: cartProduct[],
@@ -223,19 +223,7 @@ export const postSecret = async (
         shippingSpeed,
         formValues.province
       ),
-      payment_method_types: ['card'],
-      metadata: {
-        shippingSpeed,
-        userId,
-        firstName: formValues.firstName,
-        lastName: formValues.lastName,
-        streetAddress: formValues.streetAddress,
-        streetAddressTwo: formValues.streetAddressTwo,
-        city: formValues.city,
-        province: formValues.province,
-        postalCode: formValues.postalCode,
-        phoneNumber: formValues.phoneNumber
-      }
+      payment_method_types: ['card']
     });
 
     res.json({ clientSecret: intent.client_secret });
@@ -243,62 +231,6 @@ export const postSecret = async (
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
     return next(error);
   }
-};
-
-//eslint-disable-next-line
-export const webhook = async (req: Request, res: Response): Promise<any> => {
-  // i feel like i have to deploy to actually test this?
-  let event;
-  try {
-    event = req.body;
-    console.log(event);
-  } catch (err) {
-    console.log(`Webhook error while parsing basic request.`, err.message);
-    return res.send();
-  }
-  switch (event.type) {
-    case 'charge.succeeded': {
-      const { metadata } = event.data.object;
-      try {
-        const user = await User.findById(metadata.userId);
-        // should prob verify this in postSecret
-        if (!user) {
-          throw new NewError('no user found', HttpStatusCode.NOT_FOUND);
-        }
-        const order = new Order({
-          products: metadata.items,
-          totalPrice: event.data.object.amount_captured,
-          shippingSpeed: metadata.shippingSpeed,
-          contactInfo: {
-            firstName: metadata.firstName,
-            lastName: metadata.lastName,
-            streetAddress: metadata.streetAddress,
-            streetAddressTwo: metadata.streetAddressTwo,
-            city: metadata.city,
-            province: metadata.province,
-            country: 'Canada',
-            postalCode: metadata.postalCode,
-            phoneNumber: metadata.phoneNumber
-          },
-          user: {
-            email: user.email,
-            userId: metadata.userId
-          }
-        });
-        await order.save();
-      } catch (err) {
-        //what do I do here???
-        console.log(err);
-      }
-      break;
-    }
-    case 'charge.failed':
-      console.log('Charge failed. Do something about this');
-      break;
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
-  }
-  res.send();
 };
 
 export const postOrders = async (
