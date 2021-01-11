@@ -1,33 +1,34 @@
-import { ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
+import db from '../database';
 
-const Schema = mongoose.Schema;
-
-interface userDoc extends mongoose.Document {
+class User {
   name: string;
   email: string;
   password: string;
-  cart: ObjectId;
+
+  constructor(name: string, email: string, password: string) {
+    this.name = name;
+    this.email = email;
+    this.password = password;
+  }
+
+  //eslint-disable-next-line
+  save(): any {
+    return db.query('INSERT INTO users (name, email, password) VALUES ($1, $2, $3)', [
+      this.name,
+      this.email,
+      this.password
+    ]);
+  }
+
+  //eslint-disable-next-line
+  static findById(id: string): any {
+    return db.query('SELECT * FROM users WHERE user_id = $1', [id]);
+  }
+
+  //eslint-disable-next-line
+  static findByEmail(email: string): any {
+    return db.query('SELECT * FROM users WHERE email = $1', [email]);
+  }
 }
 
-const userSchema = new Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  cart: {
-    type: Schema.Types.ObjectId,
-    ref: 'Cart',
-    required: false
-  }
-});
-
-export default mongoose.model<userDoc>('User', userSchema);
+export default User;

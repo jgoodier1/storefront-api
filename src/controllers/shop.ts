@@ -20,7 +20,7 @@ interface product {
 }
 
 interface cartProduct {
-  prodId: ObjectId;
+  prodId: string;
   quantity: number;
 }
 
@@ -38,7 +38,7 @@ export const getProducts = async (
   const perPage = 10;
   let totalItems;
   try {
-    totalItems = await Product.find().countDocuments();
+    totalItems = await Product.find().length;
     const products = await Product.find()
       .skip((currentPage - 1) * 10)
       .limit(perPage);
@@ -122,15 +122,9 @@ export const postOrder = async (
     }
     // probably shouldn't hard code this here
     orderData.country = 'Canada';
-    const order = new Order({
-      products: cart.products,
-      totalPrice,
-      contactInfo: orderData,
-      shippingSpeed,
-      user: {
-        email: user.email,
-        userId: userId
-      }
+    const order = new Order(cart.products, totalPrice, orderData, shippingSpeed, {
+      email: user.email,
+      userId: userId
     });
     await order.save();
     res.status(200).json({ message: 'order success', order });
@@ -240,7 +234,8 @@ export const postOrders = async (
 ): Promise<void> => {
   const { userId } = req.body;
   try {
-    const orders = await Order.find({ 'user.userId': userId }).populate({
+    const orders = await Order.find(userId).populate({
+      // change this. Populate won't exist
       path: 'products',
       populate: { path: 'prodId' }
     });
@@ -267,9 +262,7 @@ export const getSearch = async (
   }
   if (typeof value === 'string') {
     try {
-      const results = await Product.find({
-        title: { $regex: value, $options: 'i' }
-      }).exec();
+      const results = await Product.search(value);
       res.status(200).json(results);
     } catch (err) {
       const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);

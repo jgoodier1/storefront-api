@@ -12,15 +12,9 @@ export const postAddProduct = async (
   next: NextFunction
 ): Promise<void> => {
   // if keeping this, add userId to body (i think)
-  const { title, image, price, description } = req.body;
+  const { title, image, price, description, userId } = req.body;
   try {
-    const product = new Product({
-      title: title,
-      image: image,
-      price: price,
-      description: description,
-      userId: req.userId
-    });
+    const product = new Product(userId, title, image, price, description);
     console.log(product);
     const result = await product.save();
     console.log(result);
@@ -40,8 +34,11 @@ export const getEditProduct = async (
   // console.log('req.query', req.query);
   const prodId = req.query.id;
   try {
-    const product = await Product.findById(prodId);
-    res.send(product);
+    // might not work anymore. Wasn't doing the type check before and it had custom type I'm not checking for
+    if (typeof prodId === 'string') {
+      const product = await Product.findById(prodId);
+      res.send(product);
+    }
   } catch (err) {
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
     return next(error);
@@ -91,7 +88,7 @@ export const postDeleteProduct = async (
     if (product.userId.toString() !== req.userId) {
       return res.status(401).json('not authorized');
     }
-    await Product.deleteOne({ _id: prodId });
+    await Product.deleteOne(prodId);
     res.status(200).json('product deleted');
     console.log('product deleted');
   } catch (err) {

@@ -1,11 +1,11 @@
-import { ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
+import db from '../database';
 
-const Schema = mongoose.Schema;
-
-interface orderDoc extends mongoose.Document {
-  products: [prodId: ObjectId, quantity: number, price: number];
+class Order {
+  // needs to be an array of these objects, not just references to the products table
+  // maybe it'd be easiest as json?
+  products: { prodId: string; quantity: number; price: number }[];
   totalPrice: number;
+  // could be it's own table
   contactInfo: {
     firstName: string;
     lastName: string;
@@ -20,51 +20,44 @@ interface orderDoc extends mongoose.Document {
   shippingSpeed: string;
   user: {
     email: string;
-    userId: ObjectId;
+    userId: string;
   };
+  constructor(
+    products: { prodId: string; quantity: number; price: number }[],
+    totalPrice: number,
+    contactInfo: {
+      firstName: string;
+      lastName: string;
+      streetAddress: string;
+      streetAddressTwo: string;
+      city: string;
+      province: string;
+      country: string;
+      postalCode: string;
+      phoneNumber: string;
+    },
+    shippingSpeed: string,
+    user: {
+      email: string;
+      userId: string;
+    }
+  ) {
+    this.products = products;
+    this.totalPrice = totalPrice;
+    this.contactInfo = contactInfo;
+    this.shippingSpeed = shippingSpeed;
+    this.user = user;
+  }
+
+  //eslint-disable-next-line
+  save(): any {
+    return db.query('');
+  }
+
+  //eslint-disable-next-line
+  static find(userId: string): any {
+    return db.query('SELECT * FROM orders WHERE userId = $1', [userId]);
+  }
 }
 
-const orderSchema = new Schema(
-  {
-    products: [
-      {
-        prodId: {
-          type: Schema.Types.ObjectId,
-          ref: 'Product',
-          required: true
-        },
-        quantity: {
-          type: Number,
-          required: true
-        },
-        price: {
-          type: Number,
-          required: true
-        }
-      }
-    ],
-    totalPrice: {
-      type: Number,
-      required: true
-    },
-    contactInfo: {
-      firstName: { type: String, required: true },
-      lastName: { type: String, required: true },
-      streetAddress: { type: String, required: true },
-      streetAddressTwo: { type: String, required: false },
-      city: { type: String, required: true },
-      province: { type: String, required: true },
-      country: { type: String, required: true },
-      postalCode: { type: String, required: true },
-      phoneNumber: { type: String, required: true }
-    },
-    shippingSpeed: { type: String, required: true },
-    user: {
-      email: { type: String, required: true },
-      userId: { type: Schema.Types.ObjectId, ref: 'User', required: true }
-    }
-  },
-  { timestamps: true }
-);
-
-export default mongoose.model<orderDoc>('Order', orderSchema);
+export default Order;

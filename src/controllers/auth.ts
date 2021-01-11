@@ -17,11 +17,7 @@ export const postSignUp = (req: Request, res: Response, next: NextFunction): any
   bcrypt
     .hash(password, salt)
     .then(hashedPassword => {
-      const user = new User({
-        name: name,
-        email: email,
-        password: hashedPassword
-      });
+      const user = new User(name, email, hashedPassword);
       return user.save();
     })
     .then(() => {
@@ -45,7 +41,7 @@ export const postSignIn = async (
     return res.status(422).json(errors.array());
   }
   try {
-    const user = await User.findOne({ email: email });
+    const user = await User.findByEmail(email);
     if (!user) {
       // return as array because that's what frontend already expects for other errors
       res.status(422).json([{ msg: 'Invalid email or password' }]);
