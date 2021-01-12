@@ -13,7 +13,7 @@ class User {
 
   //eslint-disable-next-line
   save(): any {
-    return db.query('INSERT INTO users (name, email, password) VALUES ($1, $2, $3)', [
+    return db.query('INSERT INTO users (name, email,  pass_hash) VALUES ($1, $2, $3)', [
       this.name,
       this.email,
       this.password
@@ -26,7 +26,7 @@ class User {
   }
 
   //eslint-disable-next-line
-  static findByEmail(email: string): any {
+  static findByEmail(email: string): Promise<any> {
     return db.query('SELECT * FROM users WHERE email = $1', [email]);
   }
 }
