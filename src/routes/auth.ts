@@ -15,7 +15,7 @@ router.post(
       .withMessage('Please enter a valid email')
       .custom(async value => {
         const user = await User.findByEmail(value);
-        if (user) {
+        if (user.rowCount !== 0) {
           return Promise.reject('Email already exists');
         } else return;
       })
