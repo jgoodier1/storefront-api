@@ -3,7 +3,7 @@ import fs from 'fs';
 import express, { Response, Request, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import * as dotenv from 'dotenv';
+import 'dotenv/config';
 import helmet from 'helmet';
 import morgan from 'morgan';
 // import adminRoutes from './routes/admin';
@@ -12,8 +12,6 @@ import authRoutes from './routes/auth';
 import { NewError } from './error';
 
 const app = express();
-
-dotenv.config({ path: __dirname + '/.env' });
 
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
   flags: 'a'
