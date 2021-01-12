@@ -30,21 +30,33 @@ class Product {
   }
 
   //eslint-disable-next-line
-  static findById(id: string): any {
-    return db.query('SELECT * FROM products WHERE id = $1', [id]);
+  static async findById(id: string): Promise<any> {
+    const query = await db.query('SELECT * FROM products WHERE prod_id = $1', [id]);
+    return query.rows[0];
   }
 
   //eslint-disable-next-line
-  static find(): any {
-    return db.query('SELECT * FROM products');
+  static async find(limit: number, offset: number): Promise<any> {
+    const query = await db.query('SELECT * FROM products LIMIT $1 OFFSET $2', [
+      limit,
+      offset
+    ]);
+    return query.rows;
   }
 
   //eslint-disable-next-line
-  static search(searchValue: string): any {
-    return db.query(
-      'SELECT * FROM products WHERE title ILIKE $1 OR description ILIKE $1',
+  static async count(): Promise<any> {
+    const query = await db.query('SELECT COUNT(prod_id) FROM products');
+    return query.rows[0].count;
+  }
+
+  //eslint-disable-next-line
+  static async search(searchValue: string): Promise<any> {
+    const query = await db.query(
+      "SELECT * FROM products WHERE title ILIKE ('%' || $1 || '%') OR description ILIKE ('%' ||$1 || '%')",
       [searchValue]
     );
+    return query.rows;
   }
 
   //eslint-disable-next-line

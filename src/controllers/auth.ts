@@ -42,20 +42,20 @@ export const postSignIn = async (
   }
   try {
     const user = await User.findByEmail(email);
-    if (user.rowCount === 0) {
+    if (!user) {
       // return as array because that's what frontend already expects for other errors
       res.status(422).json([{ msg: 'Invalid email or password' }]);
     } else {
       bcrypt
-        .compare(password, user.rows[0].pass_hash)
+        .compare(password, user.pass_hash)
         .then(doMatch => {
           if (doMatch && process.env.JWT !== undefined) {
             const token = jwt.sign(
-              { email, userId: user.rows[0].user_id.toString() },
+              { email, userId: user.user_id.toString() },
               process.env.JWT,
               { expiresIn: '1hr' }
             );
-            res.json({ token: token, userId: user.rows[0].user_id.toString() });
+            res.json({ token: token, userId: user.user_id.toString() });
           } else {
             // return as array because that's what frontend already expects for other errors
             return res.status(422).json([{ msg: 'Invalid email or password' }]);

@@ -21,13 +21,15 @@ class User {
   }
 
   //eslint-disable-next-line
-  static findById(id: string): any {
-    return db.query('SELECT * FROM users WHERE user_id = $1', [id]);
+  static async findById(id: string): Promise<any> {
+    const query = await db.query('SELECT * FROM users WHERE user_id = $1', [id]);
+    return query.rows[0];
   }
 
   //eslint-disable-next-line
-  static findByEmail(email: string): Promise<any> {
-    return db.query('SELECT * FROM users WHERE email = $1', [email]);
+  static async findByEmail(email: string): Promise<any> {
+    const query = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    return query.rows[0];
   }
 }
 
