@@ -1,5 +1,6 @@
 // NOT USING THIS
 // This might not work now because I changed everything to try/catch and didn't test it
+// also didn't test after moving to sql
 
 // import jwt from 'jsonwebtoken';
 import { NextFunction, Request, Response } from 'express';
