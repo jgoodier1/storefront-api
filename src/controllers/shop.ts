@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { ObjectId } from 'mongodb';
 import { validationResult } from 'express-validator';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_KEY as string, {
@@ -15,7 +14,7 @@ interface product {
   title: string;
   image: string;
   price: number;
-  prodId: ObjectId;
+  prodId: number;
   quantity: number;
 }
 
@@ -24,24 +23,50 @@ interface cartProduct {
   quantity: number;
 }
 
+interface order {
+  order_id: string;
+  user_id: string;
+  email: string;
+  products: string;
+  total_price: number;
+  shipping_speed: string;
+  first_name: string;
+  last_name: string;
+  street_address: string;
+  street_address_two: string;
+  city: string;
+  province: string;
+  country: string;
+  postal_code: string;
+  phone_number: string;
+  contactInfo?: {
+    firstName: string;
+    lastName: string;
+    streetAddress: string;
+    streetAddressTwo: string;
+    city: string;
+    province: string;
+    country: string;
+    postalCode: string;
+    phoneNumber: string;
+  };
+}
 export const getProducts = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  let currentPage;
+  let currentPage: number;
   if (req.query.page !== undefined) {
     currentPage = +req.query.page;
   } else {
     currentPage = 1;
   }
-  const perPage = 10;
-  let totalItems;
   try {
-    totalItems = await Product.find().length;
-    const products = await Product.find()
-      .skip((currentPage - 1) * 10)
-      .limit(perPage);
+    const perPage = 10;
+    const offset = (currentPage - 1) * 10;
+    const products = await Product.find(perPage, offset);
+    const totalItems = await Product.count();
     if (!products || !totalItems) {
       const error = new NewError('Products not found', HttpStatusCode.NOT_FOUND);
       return next(error);
@@ -88,7 +113,7 @@ export const postCart = async (
             title: result.title,
             image: result.image,
             price: result.price,
-            prodId: result._id,
+            prodId: result.prod_id,
             quantity: p.quantity
           };
           response.push(prod);
@@ -122,10 +147,24 @@ export const postOrder = async (
     }
     // probably shouldn't hard code this here
     orderData.country = 'Canada';
-    const order = new Order(cart.products, totalPrice, orderData, shippingSpeed, {
-      email: user.email,
-      userId: userId
-    });
+    const products: product[] = [];
+    for await (const p of cart.products) {
+      // need to keep quantity and price paid
+      const product = await Product.findById(p.prodId);
+      if (!product) continue;
+      product.quantity = p.quantity;
+      product.price = p.price;
+      products.push(product);
+    }
+    const order = new Order(
+      JSON.stringify(products),
+      totalPrice,
+      orderData,
+      shippingSpeed,
+      user.email,
+      userId,
+      new Date()
+    );
     await order.save();
     res.status(200).json({ message: 'order success', order });
   } catch (err) {
@@ -148,7 +187,7 @@ export const postSecret = async (
   ): Promise<number> => {
     const priceArray: number[] = [];
     for await (const p of items) {
-      const product = await Product.findById(p.prodId).exec();
+      const product = await Product.findById(p.prodId);
       if (!product) continue;
       const totalPrice = product.price * p.quantity;
       priceArray.push(totalPrice);
@@ -234,15 +273,39 @@ export const postOrders = async (
 ): Promise<void> => {
   const { userId } = req.body;
   try {
-    const orders = await Order.find(userId).populate({
-      // change this. Populate won't exist
-      path: 'products',
-      populate: { path: 'prodId' }
-    });
+    const orders = await Order.find(userId);
     if (!orders) {
       throw new Error('no orders found');
     }
-    res.status(200).json(orders);
+    // doing it this way because the front-end expect all contact info in an object
+    const editedOrder = orders.map((order: order) => {
+      const {
+        first_name,
+        last_name,
+        street_address,
+        street_address_two,
+        city,
+        province,
+        country,
+        postal_code,
+        phone_number,
+        ...rest
+      } = order;
+      // rest.products = JSON.parse(rest.products);
+      rest.contactInfo = {
+        firstName: first_name,
+        lastName: last_name,
+        streetAddress: street_address,
+        streetAddressTwo: street_address_two,
+        city: city,
+        province: province,
+        country: country,
+        postalCode: postal_code,
+        phoneNumber: phone_number
+      };
+      return rest;
+    });
+    res.status(200).json(editedOrder);
   } catch (err) {
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
     return next(error);
