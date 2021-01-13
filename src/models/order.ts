@@ -1,10 +1,7 @@
-import { ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
+import db from '../database';
 
-const Schema = mongoose.Schema;
-
-interface orderDoc extends mongoose.Document {
-  products: [prodId: ObjectId, quantity: number, price: number];
+class Order {
+  products: string;
   totalPrice: number;
   contactInfo: {
     firstName: string;
@@ -18,53 +15,70 @@ interface orderDoc extends mongoose.Document {
     phoneNumber: string;
   };
   shippingSpeed: string;
-  user: {
-    email: string;
-    userId: ObjectId;
-  };
+  email: string;
+  userId: string;
+  date: Date;
+  constructor(
+    products: string,
+    totalPrice: number,
+    contactInfo: {
+      firstName: string;
+      lastName: string;
+      streetAddress: string;
+      streetAddressTwo: string;
+      city: string;
+      province: string;
+      country: string;
+      postalCode: string;
+      phoneNumber: string;
+    },
+    shippingSpeed: string,
+    email: string,
+    userId: string,
+    date: Date
+  ) {
+    this.products = products;
+    this.totalPrice = totalPrice;
+    this.contactInfo = contactInfo;
+    this.shippingSpeed = shippingSpeed;
+    this.email = email;
+    this.userId = userId;
+    this.date = date;
+  }
+
+  //eslint-disable-next-line
+  async save(): Promise<any> {
+    return await db.query(
+      `INSERT INTO orders
+      (user_id, email,products, total_price, shipping_speed,date, first_name, last_name,
+        street_address, street_address_two, city, province, country,
+        postal_code, phone_number)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, $14, $15)`,
+      [
+        this.userId,
+        this.email,
+        this.products,
+        this.totalPrice,
+        this.shippingSpeed,
+        this.date,
+        this.contactInfo.firstName,
+        this.contactInfo.lastName,
+        this.contactInfo.streetAddress,
+        this.contactInfo.streetAddressTwo,
+        this.contactInfo.city,
+        this.contactInfo.province,
+        this.contactInfo.country,
+        this.contactInfo.postalCode,
+        this.contactInfo.phoneNumber
+      ]
+    );
+  }
+
+  //eslint-disable-next-line
+  static async find(userId: string): Promise<any> {
+    const query = await db.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
+    return query.rows;
+  }
 }
 
-const orderSchema = new Schema(
-  {
-    products: [
-      {
-        prodId: {
-          type: Schema.Types.ObjectId,
-          ref: 'Product',
-          required: true
-        },
-        quantity: {
-          type: Number,
-          required: true
-        },
-        price: {
-          type: Number,
-          required: true
-        }
-      }
-    ],
-    totalPrice: {
-      type: Number,
-      required: true
-    },
-    contactInfo: {
-      firstName: { type: String, required: true },
-      lastName: { type: String, required: true },
-      streetAddress: { type: String, required: true },
-      streetAddressTwo: { type: String, required: false },
-      city: { type: String, required: true },
-      province: { type: String, required: true },
-      country: { type: String, required: true },
-      postalCode: { type: String, required: true },
-      phoneNumber: { type: String, required: true }
-    },
-    shippingSpeed: { type: String, required: true },
-    user: {
-      email: { type: String, required: true },
-      userId: { type: Schema.Types.ObjectId, ref: 'User', required: true }
-    }
-  },
-  { timestamps: true }
-);
-
-export default mongoose.model<orderDoc>('Order', orderSchema);
+export default Order;

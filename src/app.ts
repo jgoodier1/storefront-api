@@ -1,7 +1,6 @@
 import path from 'path';
 import fs from 'fs';
 import express, { Response, Request, NextFunction } from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import 'dotenv/config';
@@ -38,13 +37,4 @@ app.use((error: NewError, req: Request, res: Response, next: NextFunction) => {
 
 const port = process.env.PORT || 5000;
 
-mongoose
-  .connect(process.env.MONGODB_URI as string, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useCreateIndex: true
-  })
-  .then(() => {
-    app.listen(port);
-  })
-  .catch(err => console.log(err));
+app.listen(port);
