@@ -33,7 +33,6 @@ router.post(
       .trim()
       .isAlphanumeric()
       .isLength({ max: 50, min: 2 }),
-    body('orderData.province').trim().isAlphanumeric(),
     body('orderData.postalCode', 'Invalid postal code format')
       .trim()
       .isAlphanumeric()
