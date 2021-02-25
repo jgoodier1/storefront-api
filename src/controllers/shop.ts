@@ -13,7 +13,7 @@ import { NewError, HttpStatusCode } from '../error';
 interface product {
   title: string;
   image: string;
-  price: number;
+  price: string;
   prodId: number;
   quantity: number;
 }
@@ -24,12 +24,19 @@ interface cartProduct {
 }
 
 interface order {
-  order_id: string;
-  user_id: string;
+  order_id: number;
+  user_id: number;
   email: string;
-  products: string;
-  total_price: number;
+  products: {
+    title: string;
+    image: string;
+    price: string;
+    prodId: number;
+    quantity: number;
+  }[];
+  total_price: string;
   shipping_speed: string;
+  date: Date;
   first_name: string;
   last_name: string;
   street_address: string;
@@ -39,17 +46,6 @@ interface order {
   country: string;
   postal_code: string;
   phone_number: string;
-  contactInfo?: {
-    firstName: string;
-    lastName: string;
-    streetAddress: string;
-    streetAddressTwo: string;
-    city: string;
-    province: string;
-    country: string;
-    postalCode: string;
-    phoneNumber: string;
-  };
 }
 export const getProducts = async (
   req: Request,
@@ -133,8 +129,7 @@ export const postOrder = async (
   req: Request,
   res: Response,
   next: NextFunction
-  // eslint-disable-next-line
-): Promise<any> => {
+): Promise<void | Response> => {
   const { cart, orderData, userId, shippingSpeed, totalPrice } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -145,16 +140,20 @@ export const postOrder = async (
     if (!user) {
       throw new NewError('no user found', HttpStatusCode.NOT_FOUND);
     }
-    // probably shouldn't hard code this here
     orderData.country = 'Canada';
     const products: product[] = [];
     for await (const p of cart.products) {
       // need to keep quantity and price paid
       const product = await Product.findById(p.prodId);
       if (!product) continue;
-      product.quantity = p.quantity;
-      product.price = p.price;
-      products.push(product);
+      const cartItem: product = {
+        title: product.title,
+        image: product.image,
+        price: product.price,
+        prodId: product.prod_id,
+        quantity: p.quantity
+      };
+      products.push(cartItem);
     }
     const order = new Order(
       JSON.stringify(products),
@@ -189,7 +188,7 @@ export const postSecret = async (
     for await (const p of items) {
       const product = await Product.findById(p.prodId);
       if (!product) continue;
-      const totalPrice = product.price * p.quantity;
+      const totalPrice = +product.price * p.quantity;
       priceArray.push(totalPrice);
     }
     let subTotal: number;
@@ -289,21 +288,23 @@ export const postOrders = async (
         country,
         postal_code,
         phone_number,
-        ...rest
+        ...everythingElse
       } = order;
-      // rest.products = JSON.parse(rest.products);
-      rest.contactInfo = {
-        firstName: first_name,
-        lastName: last_name,
-        streetAddress: street_address,
-        streetAddressTwo: street_address_two,
-        city: city,
-        province: province,
-        country: country,
-        postalCode: postal_code,
-        phoneNumber: phone_number
+      const formattedOrder = {
+        ...everythingElse,
+        contactInfo: {
+          firstName: first_name,
+          lastName: last_name,
+          streetAddress: street_address,
+          streetAddressTwo: street_address_two,
+          city: city,
+          province: province,
+          country: country,
+          postalCode: postal_code,
+          phoneNumber: phone_number
+        }
       };
-      return rest;
+      return formattedOrder;
     });
     res.status(200).json(editedOrder);
   } catch (err) {
@@ -316,8 +317,7 @@ export const getSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-  // eslint-disable-next-line
-): Promise<any> => {
+): Promise<void | Response> => {
   const { value } = req.query;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

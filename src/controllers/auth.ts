@@ -6,8 +6,11 @@ import { NextFunction, Request, Response } from 'express';
 import User from '../models/user';
 import { HttpStatusCode, NewError } from '../error';
 
-// eslint-disable-next-line
-export const postSignUp = (req: Request, res: Response, next: NextFunction): any => {
+export const postSignUp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void | Response> => {
   const { email, password, name } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -16,9 +19,9 @@ export const postSignUp = (req: Request, res: Response, next: NextFunction): any
   const salt = bcrypt.genSaltSync(10);
   bcrypt
     .hash(password, salt)
-    .then(hashedPassword => {
+    .then(async hashedPassword => {
       const user = new User(name, email, hashedPassword);
-      return user.save();
+      await user.save();
     })
     .then(() => {
       res.status(200).json('signup complete');
@@ -33,8 +36,7 @@ export const postSignIn = async (
   req: Request,
   res: Response,
   next: NextFunction
-  // eslint-disable-next-line
-): Promise<any> => {
+): Promise<void | Response> => {
   const { email, password } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

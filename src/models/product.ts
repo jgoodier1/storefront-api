@@ -1,5 +1,14 @@
 import db from '../database';
 
+interface ProductQuery {
+  prod_id: number;
+  title: string;
+  price: string;
+  image: string;
+  description: string;
+  quantity?: number;
+}
+
 class Product {
   userId: number;
   title: string;
@@ -21,22 +30,12 @@ class Product {
     this.userId = userId;
   }
 
-  //eslint-disable-next-line
-  save(): any {
-    return db.query(
-      'INSERT INTO products (userId, title, price, image, description) VALUES ($1, $2, $3, $4, $5)',
-      [this.userId, this.title, this.price, this.image, this.description]
-    );
-  }
-
-  //eslint-disable-next-line
-  static async findById(id: string): Promise<any> {
+  static async findById(id: string): Promise<ProductQuery> {
     const query = await db.query('SELECT * FROM products WHERE prod_id = $1', [id]);
     return query.rows[0];
   }
 
-  //eslint-disable-next-line
-  static async find(limit: number, offset: number): Promise<any> {
+  static async find(limit: number, offset: number): Promise<ProductQuery[]> {
     const query = await db.query('SELECT * FROM products LIMIT $1 OFFSET $2', [
       limit,
       offset
@@ -44,24 +43,17 @@ class Product {
     return query.rows;
   }
 
-  //eslint-disable-next-line
-  static async count(): Promise<any> {
+  static async count(): Promise<number> {
     const query = await db.query('SELECT COUNT(prod_id) FROM products');
     return query.rows[0].count;
   }
 
-  //eslint-disable-next-line
-  static async search(searchValue: string): Promise<any> {
+  static async search(searchValue: string): Promise<ProductQuery[]> {
     const query = await db.query(
       "SELECT * FROM products WHERE title ILIKE ('%' || $1 || '%') OR description ILIKE ('%' ||$1 || '%')",
       [searchValue]
     );
     return query.rows;
-  }
-
-  //eslint-disable-next-line
-  static deleteOne(id: string): any {
-    return db.query('DELETE FROM products WHERE id = $1', [id]);
   }
 }
 

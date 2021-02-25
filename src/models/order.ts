@@ -1,5 +1,30 @@
 import db from '../database';
 
+interface OrderQuery {
+  order_id: number;
+  user_id: number;
+  email: string;
+  products: {
+    title: string;
+    image: string;
+    price: string;
+    prodId: number;
+    quantity: number;
+  }[];
+  total_price: string;
+  shipping_speed: string;
+  date: Date;
+  first_name: string;
+  last_name: string;
+  street_address: string;
+  street_address_two: string;
+  city: string;
+  province: string;
+  country: string;
+  postal_code: string;
+  phone_number: string;
+}
+
 class Order {
   products: string;
   totalPrice: number;
@@ -46,9 +71,8 @@ class Order {
     this.date = date;
   }
 
-  //eslint-disable-next-line
-  async save(): Promise<any> {
-    return await db.query(
+  async save(): Promise<void> {
+    await db.query(
       `INSERT INTO orders
       (user_id, email,products, total_price, shipping_speed,date, first_name, last_name,
         street_address, street_address_two, city, province, country,
@@ -74,8 +98,7 @@ class Order {
     );
   }
 
-  //eslint-disable-next-line
-  static async find(userId: string): Promise<any> {
+  static async find(userId: string): Promise<OrderQuery[]> {
     const query = await db.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
     return query.rows;
   }
