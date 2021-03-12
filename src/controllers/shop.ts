@@ -14,7 +14,7 @@ interface product {
   title: string;
   image: string;
   price: string;
-  prodId: number;
+  prod_id: number;
   quantity: number;
 }
 
@@ -109,7 +109,7 @@ export const postCart = async (
             title: result.title,
             image: result.image,
             price: result.price,
-            prodId: result.prod_id,
+            prod_id: result.prod_id,
             quantity: p.quantity
           };
           response.push(prod);
@@ -150,7 +150,8 @@ export const postOrder = async (
         title: product.title,
         image: product.image,
         price: product.price,
-        prodId: product.prod_id,
+        // needs to be prod_id because this gets stored in the database and can't be changed
+        prod_id: product.prod_id,
         quantity: p.quantity
       };
       products.push(cartItem);
