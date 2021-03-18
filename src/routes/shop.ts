@@ -47,7 +47,7 @@ router.post(
   shopController.postOrder
 );
 router.post('/create-payment-intent', shopController.postSecret);
-router.post('/orders', shopController.postOrders);
+router.get('/orders', shopController.getOrders);
 router.get('/search', [query('value').trim().isAlphanumeric()], shopController.getSearch);
 
 export default router;

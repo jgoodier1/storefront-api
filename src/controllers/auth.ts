@@ -6,6 +6,12 @@ import { NextFunction, Request, Response } from 'express';
 import User from '../models/user';
 import { HttpStatusCode, NewError } from '../error';
 
+interface Token {
+  email: string;
+  userId: string;
+  exp: number;
+}
+
 export const postSignUp = async (
   req: Request,
   res: Response,
@@ -57,7 +63,17 @@ export const postSignIn = async (
               process.env.JWT,
               { expiresIn: '1hr' }
             );
-            res.json({ token: token, userId: user.user_id.toString() });
+            // need 'remember me' option that keeps it for a week, if not check don't set `maxAge`
+            res.cookie('token', token, {
+              maxAge: 3600000,
+              httpOnly: true,
+              sameSite: 'strict',
+              secure: true
+            });
+            res
+              .status(HttpStatusCode.OK)
+              .json({ token: token, userId: user.user_id.toString() });
+            // res.json({ token: token, userId: user.user_id.toString() });
           } else {
             // return as array because that's what frontend already expects for other errors
             return res.status(422).json([{ msg: 'Invalid email or password' }]);
@@ -72,4 +88,21 @@ export const postSignIn = async (
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
     return next(error);
   }
+};
+
+export const logout = (req: Request, res: Response): void => {
+  res.clearCookie('token').json('logout successful');
+};
+
+export const checkAuth = (req: Request, res: Response): void => {
+  const cookies = req.cookies;
+  if (cookies.token) {
+    if (process.env.JWT !== undefined) {
+      const decodedToken = jwt.verify(cookies.token, process.env.JWT);
+      // not sure it works, since the cookie and token were unsynced (their expire times)
+      const expireTime = (decodedToken as Token).exp - Math.floor(Date.now() / 1000);
+      console.log(expireTime);
+      res.status(HttpStatusCode.OK).json({ expireTime });
+    }
+  } else res.status(HttpStatusCode.UNATHORIZED);
 };

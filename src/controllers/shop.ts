@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_KEY as string, {
   apiVersion: '2020-08-27'
@@ -47,6 +48,13 @@ interface order {
   postal_code: string;
   phone_number: string;
 }
+
+interface Token {
+  userId: string;
+  email: string;
+  exp: number;
+}
+
 export const getProducts = async (
   req: Request,
   res: Response,
@@ -130,43 +138,48 @@ export const postOrder = async (
   res: Response,
   next: NextFunction
 ): Promise<void | Response> => {
-  const { cart, orderData, userId, shippingSpeed, totalPrice } = req.body;
+  const { cart, orderData, shippingSpeed, totalPrice } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).json(errors.array());
   }
+  const cookies = req.cookies;
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new NewError('no user found', HttpStatusCode.NOT_FOUND);
+    if (process.env.JWT !== undefined) {
+      const decodedToken = jwt.verify(cookies.token, process.env.JWT);
+      const userId = (decodedToken as Token).userId;
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new NewError('no user found', HttpStatusCode.NOT_FOUND);
+      }
+      orderData.country = 'Canada';
+      const products: product[] = [];
+      for await (const p of cart.products) {
+        // need to keep quantity and price paid
+        const product = await Product.findById(p.prodId);
+        if (!product) continue;
+        const cartItem: product = {
+          title: product.title,
+          image: product.image,
+          price: product.price,
+          // needs to be prod_id because this gets stored in the database and can't be changed
+          prod_id: product.prod_id,
+          quantity: p.quantity
+        };
+        products.push(cartItem);
+      }
+      const order = new Order(
+        JSON.stringify(products),
+        totalPrice,
+        orderData,
+        shippingSpeed,
+        user.email,
+        userId,
+        new Date()
+      );
+      await order.save();
+      res.status(200).json({ message: 'order success', order });
     }
-    orderData.country = 'Canada';
-    const products: product[] = [];
-    for await (const p of cart.products) {
-      // need to keep quantity and price paid
-      const product = await Product.findById(p.prodId);
-      if (!product) continue;
-      const cartItem: product = {
-        title: product.title,
-        image: product.image,
-        price: product.price,
-        // needs to be prod_id because this gets stored in the database and can't be changed
-        prod_id: product.prod_id,
-        quantity: p.quantity
-      };
-      products.push(cartItem);
-    }
-    const order = new Order(
-      JSON.stringify(products),
-      totalPrice,
-      orderData,
-      shippingSpeed,
-      user.email,
-      userId,
-      new Date()
-    );
-    await order.save();
-    res.status(200).json({ message: 'order success', order });
   } catch (err) {
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
     return next(error);
@@ -245,8 +258,9 @@ export const postSecret = async (
     if (subTotal < 35 && shippingSpeed === 'normal') amount = +(afterTax + 5).toFixed(2);
     else if (shippingSpeed === 'fast') amount = +(afterTax + 10).toFixed(2);
     else amount = +afterTax.toFixed(2);
-    console.log({ subTotal, tax, afterTax, amount });
-    return amount * 100;
+    amount = +(amount * 100).toFixed(0);
+    console.log({ subTotal, tax, afterTax, amount: amount });
+    return amount;
   };
   try {
     const intent = await stripe.paymentIntents.create({
@@ -266,48 +280,54 @@ export const postSecret = async (
   }
 };
 
-export const postOrders = async (
+export const getOrders = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
-  const { userId } = req.body;
+): Promise<void | Response> => {
   try {
-    const orders = await Order.find(userId);
-    if (!orders) {
-      throw new Error('no orders found');
+    if (process.env.JWT !== undefined) {
+      const cookies = req.cookies;
+      if (cookies.token === undefined) {
+        return res.status(HttpStatusCode.OK).json('token is undefined');
+      }
+      const decodedToken = jwt.verify(cookies.token, process.env.JWT);
+      const orders = await Order.find((decodedToken as Token).userId);
+      if (!orders) {
+        throw new Error('no orders found');
+      }
+      // doing it this way because the front-end expect all contact info in an object
+      const editedOrder = orders.map((order: order) => {
+        const {
+          first_name,
+          last_name,
+          street_address,
+          street_address_two,
+          city,
+          province,
+          country,
+          postal_code,
+          phone_number,
+          ...everythingElse
+        } = order;
+        const formattedOrder = {
+          ...everythingElse,
+          contactInfo: {
+            firstName: first_name,
+            lastName: last_name,
+            streetAddress: street_address,
+            streetAddressTwo: street_address_two,
+            city: city,
+            province: province,
+            country: country,
+            postalCode: postal_code,
+            phoneNumber: phone_number
+          }
+        };
+        return formattedOrder;
+      });
+      res.status(HttpStatusCode.OK).json(editedOrder);
     }
-    // doing it this way because the front-end expect all contact info in an object
-    const editedOrder = orders.map((order: order) => {
-      const {
-        first_name,
-        last_name,
-        street_address,
-        street_address_two,
-        city,
-        province,
-        country,
-        postal_code,
-        phone_number,
-        ...everythingElse
-      } = order;
-      const formattedOrder = {
-        ...everythingElse,
-        contactInfo: {
-          firstName: first_name,
-          lastName: last_name,
-          streetAddress: street_address,
-          streetAddressTwo: street_address_two,
-          city: city,
-          province: province,
-          country: country,
-          postalCode: postal_code,
-          phoneNumber: phone_number
-        }
-      };
-      return formattedOrder;
-    });
-    res.status(200).json(editedOrder);
   } catch (err) {
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
     return next(error);

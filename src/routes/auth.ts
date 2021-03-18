@@ -48,6 +48,7 @@ router.post(
   authController.postSignIn
 );
 
-// router.post('/logout', authController.postLogout);
+router.get('/logout', authController.logout);
+router.get('/checkAuth', authController.checkAuth);
 
 export default router;

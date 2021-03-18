@@ -2,6 +2,7 @@ import path from 'path';
 import express, { Response, Request, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import helmet from 'helmet';
 import shopRoutes from './routes/shop';
@@ -14,6 +15,7 @@ app.use(helmet());
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(shopRoutes);
