@@ -67,7 +67,7 @@ export const postSignIn = async (
             res.cookie('token', token, {
               maxAge: 3600000,
               httpOnly: true,
-              sameSite: 'lax',
+              sameSite: 'none',
               secure: true
             });
             res.status(HttpStatusCode.OK).json('sign-in successful');

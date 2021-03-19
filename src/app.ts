@@ -12,7 +12,7 @@ import { NewError } from './error';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: /\.netlify\.app/, credentials: true }));
+app.use(cors({ origin: [/\.netlify\.app/, /http:\/\/localhost:/], credentials: true }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
