@@ -68,7 +68,8 @@ export const postSignIn = async (
               maxAge: 3600000,
               httpOnly: true,
               sameSite: 'strict',
-              secure: true
+              secure: true,
+              domain: 'netlfiy.app'
             });
             res
               .status(HttpStatusCode.OK)
