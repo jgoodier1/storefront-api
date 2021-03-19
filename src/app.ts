@@ -12,7 +12,7 @@ import { NewError } from './error';
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: 'https://netlify.app' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(shopRoutes);
 app.use(authRoutes);
 
-// need next here or the error middleware won't work
+// need `next` here or the error middleware won't work
 //eslint-disable-next-line
 app.use((error: NewError, req: Request, res: Response, next: NextFunction) => {
   console.error(error);
