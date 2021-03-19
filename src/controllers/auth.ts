@@ -69,12 +69,9 @@ export const postSignIn = async (
               httpOnly: true,
               sameSite: 'strict',
               secure: true,
-              domain: 'netlfiy.app'
+              domain: 'netlify.app'
             });
-            res
-              .status(HttpStatusCode.OK)
-              .json({ token: token, userId: user.user_id.toString() });
-            // res.json({ token: token, userId: user.user_id.toString() });
+            res.status(HttpStatusCode.OK).json('sign-in successful');
           } else {
             // return as array because that's what frontend already expects for other errors
             return res.status(422).json([{ msg: 'Invalid email or password' }]);
