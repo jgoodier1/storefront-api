@@ -67,9 +67,8 @@ export const postSignIn = async (
             res.cookie('token', token, {
               maxAge: 3600000,
               httpOnly: true,
-              sameSite: 'strict',
-              secure: true,
-              domain: 'netlify.app'
+              sameSite: 'none',
+              secure: true
             });
             res.status(HttpStatusCode.OK).json('sign-in successful');
           } else {
