@@ -5,6 +5,7 @@ import * as shopController from '../controllers/shop';
 
 const router = express.Router();
 
+router.get('/home', shopController.getHome);
 router.get('/products', shopController.getProducts);
 router.get('/products/:prodId', shopController.getProduct);
 router.post('/cart', shopController.postCart);
