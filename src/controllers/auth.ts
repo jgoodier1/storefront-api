@@ -65,7 +65,7 @@ export const postSignIn = async (
             );
             // need 'remember me' option that keeps it for a week, if not check don't set `maxAge`
             res.cookie('token', token, {
-              maxAge: 3600000,
+              // maxAge: 3600000,
               httpOnly: true,
               sameSite: 'none',
               secure: true
