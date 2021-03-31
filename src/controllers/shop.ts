@@ -61,7 +61,7 @@ export const getHome = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const products = await Product.find(4, 0);
+    const products = await Product.find(16, 0);
     res.status(200).json(products);
   } catch (err) {
     const error = new NewError(err, HttpStatusCode.INTERNAL_SERVER);
