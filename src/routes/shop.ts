@@ -37,13 +37,11 @@ router.post(
     body('orderData.postalCode', 'Invalid postal code format')
       .trim()
       .isAlphanumeric()
-      .matches(
-        /([ABCEGHJKLMNPRSTVXY][0-9][ABCEGHJKLMNPRSTVWXYZ]) ?([0-9][ABCEGHJKLMNPRSTVWXYZ][0-9])/
-      ),
+      .matches(/^([A-Za-z][0-9][A-Za-z])([0-9][A-Za-z][0-9])$/),
     body('orderData.phoneNumber', 'Invalid phone number format')
       .trim()
       .isAlphanumeric()
-      .matches(/^(?:\([2-9]\d{2}\) ?|[2-9]\d{2}(?:-?| ?))[2-9]\d{2}[- ]?\d{4}$/)
+      .matches(/^\d{10}$/)
   ],
   shopController.postOrder
 );
